@@ -1,0 +1,47 @@
+name: Test AppConfiguration-Sync for all three cases
+on: [workflow_dispatch]
+
+permissions:
+      id-token: write
+      contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: my-test
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: 'Push config settings using connection-string'
+      uses: Botje/AppConfiguration-Sync@feature/workload-identity-federation-plus-sp
+      with:
+        configurationFile: 'connection-string.properties'
+        format: 'properties'
+        connectionString: ${{ secrets.APP_CONFIG_CONNSTRING }}
+        separator: ':'
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        auth-type: CONNECTION_STRING
+
+    - name: 'Push config settings using identity'
+      uses: Botje/AppConfiguration-Sync@feature/workload-identity-federation-plus-sp
+      with:
+        configurationFile: 'identity.properties'
+        format: 'properties'
+        endpoint: ${{ secrets.APP_CONFIG_ENDPOINT }}
+        separator: ':'
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        auth-type: FEDERATED_IDENTITY
+
+    - name: 'Push config settings using service principal'
+      uses: Botje/AppConfiguration-Sync@feature/workload-identity-federation-plus-sp
+      with:
+        configurationFile: 'service-principal.properties'
+        format: 'properties'
+        endpoint: ${{ secrets.APP_CONFIG_ENDPOINT }}
+        separator: ':'
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        auth-type: SERVICE_PRINCIPAL

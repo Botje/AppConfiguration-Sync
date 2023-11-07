@@ -10,7 +10,7 @@ export interface Input {
     workspace: string;
     configFile: string;
     format: ConfigFormat;
-    connectionString: string;
+    connectionInfo: ConnectionString;
     separator: string;
     strict: boolean;
     prefix?: string;
@@ -18,6 +18,11 @@ export interface Input {
     depth?: number;
     tags?: Tags;
     contentType?: string;
+}
+
+export interface ConnectionString {
+    type: 'connection-string';
+    connectionString: string;
 }
 
 /**
@@ -31,11 +36,15 @@ export interface Tags {
  * Obtain the action inputs from the GitHub environment
  */
 export function getInput(): Input {
+    const connectionStringCredentials = getConnectionStringConnectionInfo();
+
+    const connectionInfo = connectionStringCredentials;
+
     return {
         workspace:          getWorkspace(),
         configFile:         getRequiredInputString('configurationFile'),
+        connectionInfo:     connectionInfo,
         format:             getFormat(),
-        connectionString:   getConnectionString(),
         separator:          getSeparator(),
         strict:             getStrict(),
         prefix:             getNonRequiredInputString('prefix'),
@@ -82,7 +91,7 @@ function getFormat(): ConfigFormat {
     }
 }
 
-function getConnectionString(): string {
+function getConnectionStringConnectionInfo(): ConnectionString {
     const connectionString = getRequiredInputString('connectionString');
 
     const segments = connectionString.split(";");
@@ -110,7 +119,7 @@ function getConnectionString(): string {
         throw new ArgumentError(`Connection string is invalid.`);
     }
 
-    return connectionString;
+    return { type: 'connection-string', connectionString };
 }
 
 function getSeparator(): string {

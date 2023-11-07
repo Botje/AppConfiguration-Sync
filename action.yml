@@ -45,5 +45,5 @@ inputs:
     description: 'App Registration Client ID'
     required: false
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'lib/index.js'

@@ -10,7 +10,7 @@ export interface Input {
     workspace: string;
     configFile: string;
     format: ConfigFormat;
-    connectionInfo: ConnectionString;
+    connectionInfo: ConnectionString | Identity;
     separator: string;
     strict: boolean;
     prefix?: string;
@@ -25,6 +25,14 @@ export interface ConnectionString {
     connectionString: string;
 }
 
+export interface Identity {
+    type: 'identity';
+    endpoint: string;
+    clientId: string;
+    tenantId: string;
+    audience: string;
+}
+
 /**
  * Represents the tags that apply to a setting
  */
@@ -36,9 +44,14 @@ export interface Tags {
  * Obtain the action inputs from the GitHub environment
  */
 export function getInput(): Input {
+    const workloadIdentityCredentials = getWorkloadIdentityConnectionInfo();
     const connectionStringCredentials = getConnectionStringConnectionInfo();
 
-    const connectionInfo = connectionStringCredentials;
+    const connectionInfo = workloadIdentityCredentials || connectionStringCredentials;
+
+    if (!connectionInfo) {
+        throw new ArgumentError(`Neither connectionString nor {endpoint, clientId, tenantId} provided`);
+    }
 
     return {
         workspace:          getWorkspace(),
@@ -91,8 +104,10 @@ function getFormat(): ConfigFormat {
     }
 }
 
-function getConnectionStringConnectionInfo(): ConnectionString {
-    const connectionString = getRequiredInputString('connectionString');
+function getConnectionStringConnectionInfo(): ConnectionString | undefined {
+    let connectionString = getNonRequiredInputString('connectionString');
+    if (!connectionString)
+      return undefined;
 
     const segments = connectionString.split(";");
     let valid = false;
@@ -193,4 +208,15 @@ function getTags(): Tags | undefined {
     }
 
     return parsedTags;
+}
+
+function getWorkloadIdentityConnectionInfo(): Identity | undefined {
+  const endpoint = getNonRequiredInputString("endpoint");
+  const clientId = getNonRequiredInputString("client-id");
+  const tenantId = getNonRequiredInputString("tenant-id");
+  const audience = getRequiredInputString("audience");
+  if (!endpoint || !clientId || !tenantId)
+    return undefined;
+
+  return { type: 'identity', endpoint, clientId, tenantId, audience };
 }
